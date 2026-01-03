@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.types import JSON
 from database import Base
-from datetime import date
 
 class Habit(Base):
     __tablename__ = "habits"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
-    streak = Column(Integer, default=0)
-    last_completed = Column(Date, nullable=True)
+    goal = Column(Integer)
+    completed_days = Column(JSON, default=list)
