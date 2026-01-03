@@ -1,4 +1,28 @@
+:root {
+  --bg: #2f2f2f;
+  --panel: #3a3a3a;
+  --text: #eaeaea;
+  --muted: #9ca3af;
+  --green: #22c55e;
+  --yellow: #facc15;
+  --red: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  background: #f7f7f7;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3 {
+  margin: 0;
+}
+
+table {
+  border-collapse: collapse;
 }

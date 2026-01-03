@@ -5,10 +5,10 @@ class HabitCreate(BaseModel):
     name: str
     goal: int
 
-class HabitUpdate(BaseModel):
+class ToggleDay(BaseModel):
     day: int
 
-class HabitResponse(BaseModel):
+class HabitOut(BaseModel):
     id: int
     name: str
     goal: int

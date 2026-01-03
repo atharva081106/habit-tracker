@@ -1,44 +1,41 @@
-export default function HabitRow({ habit, days, toggleDay }) {
-  const progress = Math.round(
-    (habit.completed_days.length / habit.goal) * 100
-  );
+export default function HabitRow({ habit, days, toggle }) {
+  const progress = Math.round((habit.completed_days.length / habit.goal) * 100);
 
   return (
     <tr>
       <td>{habit.name}</td>
-      <td>{habit.goal}</td>
+      <td align="center">{habit.goal}</td>
 
-      {days.map((_, idx) => {
-        const day = idx + 1;
-        const done = habit.completed_days.includes(day);
-
+      {days.map(d => {
+        const done = habit.completed_days.includes(d);
         return (
           <td
-            key={idx}
-            onClick={() => toggleDay(habit.id, day)}
+            key={d}
+            onClick={() => toggle(habit.id, d)}
             style={{
               cursor: "pointer",
-              background: done ? "#22c55e" : "#e5e7eb",
-              color: done ? "white" : "#555",
+              background: done ? "var(--green)" : "#555",
+              color: done ? "#000" : "transparent",
               textAlign: "center",
+              borderRadius: 4,
             }}
           >
-            {done ? "✓" : ""}
+            ✓
           </td>
         );
       })}
 
       <td>
-        <div style={{ background: "#e5e7eb", height: "10px" }}>
+        <div style={{ background: "#555", height: 8, borderRadius: 4 }}>
           <div
             style={{
               width: `${progress}%`,
-              background: "#22c55e",
+              background: "var(--green)",
               height: "100%",
+              borderRadius: 4,
             }}
           />
         </div>
-        <small>{progress}%</small>
       </td>
     </tr>
   );

@@ -1,13 +1,29 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from database import SessionLocal, engine
 import models, schemas
+from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Habit Tracker API")
+app = FastAPI()
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://habit-tracker.vercel.app",
+        "*"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,39 +39,38 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
-def root():
-    return {"message": "API running"}
-
-@app.post("/habits", response_model=schemas.HabitResponse)
-def create_habit(habit: schemas.HabitCreate, db: Session = Depends(get_db)):
-    new_habit = models.Habit(
-        name=habit.name,
-        goal=habit.goal,
-        completed_days=[]
-    )
-    db.add(new_habit)
-    db.commit()
-    db.refresh(new_habit)
-    return new_habit
-
-@app.get("/habits", response_model=list[schemas.HabitResponse])
+@app.get("/habits", response_model=list[schemas.HabitOut])
 def get_habits(db: Session = Depends(get_db)):
     return db.query(models.Habit).all()
 
-@app.post("/habits/{habit_id}/toggle", response_model=schemas.HabitResponse)
-def toggle_day(habit_id: int, data: schemas.HabitUpdate, db: Session = Depends(get_db)):
-    habit = db.query(models.Habit).filter(models.Habit.id == habit_id).first()
-    if not habit:
-        raise HTTPException(status_code=404, detail="Habit not found")
+@app.post("/habits", response_model=schemas.HabitOut)
+def create_habit(h: schemas.HabitCreate, db: Session = Depends(get_db)):
+    habit = models.Habit(
+        name=h.name,
+        goal=h.goal,
+        completed_days=[]
+    )
+    db.add(habit)
+    db.commit()
+    db.refresh(habit)
+    return habit
 
-    day = data.day
-
-    if day in habit.completed_days:
-        habit.completed_days.remove(day)
+@app.post("/habits/{habit_id}/toggle", response_model=schemas.HabitOut)
+def toggle_day(habit_id: int, data: schemas.ToggleDay, db: Session = Depends(get_db)):
+    habit = db.query(models.Habit).get(habit_id)
+    if data.day in habit.completed_days:
+        habit.completed_days.remove(data.day)
     else:
-        habit.completed_days.append(day)
+        habit.completed_days.append(data.day)
 
     db.commit()
     db.refresh(habit)
     return habit
+
+@app.get("/stats")
+def stats(db: Session = Depends(get_db)):
+    habits = db.query(models.Habit).all()
+    total = sum(h.goal for h in habits)
+    completed = sum(len(h.completed_days) for h in habits)
+    success = round((completed / total) * 100) if total else 0
+    return {"completed": completed, "total": total, "success": success}
