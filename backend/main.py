@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -7,10 +7,9 @@ from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(title="Habit Tracker API")
 
-from fastapi.middleware.cors import CORSMiddleware
-
+# ✅ CORS MUST BE HERE (before routes)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -24,20 +23,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+@app.get("/")
+def root():
+    return {"message": "Habit Tracker API is running"}
 
 @app.get("/habits", response_model=list[schemas.HabitOut])
 def get_habits(db: Session = Depends(get_db)):
@@ -57,7 +52,10 @@ def create_habit(h: schemas.HabitCreate, db: Session = Depends(get_db)):
 
 @app.post("/habits/{habit_id}/toggle", response_model=schemas.HabitOut)
 def toggle_day(habit_id: int, data: schemas.ToggleDay, db: Session = Depends(get_db)):
-    habit = db.query(models.Habit).get(habit_id)
+    habit = db.query(models.Habit).filter(models.Habit.id == habit_id).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+
     if data.day in habit.completed_days:
         habit.completed_days.remove(data.day)
     else:
@@ -73,4 +71,8 @@ def stats(db: Session = Depends(get_db)):
     total = sum(h.goal for h in habits)
     completed = sum(len(h.completed_days) for h in habits)
     success = round((completed / total) * 100) if total else 0
-    return {"completed": completed, "total": total, "success": success}
+    return {
+        "completed": completed,
+        "total": total,
+        "success": success
+    }
